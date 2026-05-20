@@ -1,0 +1,35 @@
+@LittleOSS_HostAddress = http://localhost:5048
+@AccessKeyId = oss-key-001
+@AccessKeySecret = secret-xxx
+@Region = cn-east-1
+
+### 查询配额
+GET {{LittleOSS_HostAddress}}/api/{{Region}}/quota
+X-AccessKey-Id: {{AccessKeyId}}
+X-AccessKey-Secret: {{AccessKeySecret}}
+
+### 列出文件
+GET {{LittleOSS_HostAddress}}/api/{{Region}}/files
+X-AccessKey-Id: {{AccessKeyId}}
+X-AccessKey-Secret: {{AccessKeySecret}}
+
+### 分页列出文件
+GET {{LittleOSS_HostAddress}}/api/{{Region}}/files?skip=0&take=20
+X-AccessKey-Id: {{AccessKeyId}}
+X-AccessKey-Secret: {{AccessKeySecret}}
+
+### 上传文件
+PUT {{LittleOSS_HostAddress}}/api/{{Region}}/files
+X-AccessKey-Id: {{AccessKeyId}}
+X-AccessKey-Secret: {{AccessKeySecret}}
+Content-Type: multipart/form-data
+
+### 下载文件 (替换 {{fileId}})
+GET {{LittleOSS_HostAddress}}/api/{{Region}}/files/{{fileId}}
+X-AccessKey-Id: {{AccessKeyId}}
+X-AccessKey-Secret: {{AccessKeySecret}}
+
+### 删除文件 (替换 {{fileId}})
+DELETE {{LittleOSS_HostAddress}}/api/{{Region}}/files/{{fileId}}
+X-AccessKey-Id: {{AccessKeyId}}
+X-AccessKey-Secret: {{AccessKeySecret}}
