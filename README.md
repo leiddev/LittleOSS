@@ -70,6 +70,39 @@ dotnet run
 
 服务启动后访问 `http://localhost:5048`。
 
+### 使用 curl 测试
+
+```bash
+# 上传文件
+curl -X PUT http://localhost:5048/api/cn-east-1/files \
+  -H "X-AccessKey-Id: oss-key-001" \
+  -H "X-AccessKey-Secret: secret-xxx" \
+  -F "file=@test.tar.gz"
+
+# 下载文件
+curl -O -J -H "X-AccessKey-Id: oss-key-001" -H "X-AccessKey-Secret: secret-xxx"   "http://localhost:5048/api/cn-east-1/files/78bd4c8eb33542178924278edf7b3f27"
+
+# 删除指定文件
+curl -X DELETE "http://localhost:5048/api/cn-east-1/files/78bd4c8eb33542178924278edf7b3f27" \
+  -H "X-AccessKey-Id: oss-key-001" \
+  -H "X-AccessKey-Secret: secret-xxx"
+
+# 列出所有文件（默认最多 100 条）
+curl -X GET "http://localhost:5048/api/cn-east-1/files" \
+  -H "X-AccessKey-Id: oss-key-001" \
+  -H "X-AccessKey-Secret: secret-xxx"
+
+# 分页查询（跳过前 10 条，取 20 条）
+curl -X GET "http://localhost:5048/api/cn-east-1/files?skip=10&take=20" \
+  -H "X-AccessKey-Id: oss-key-001" \
+  -H "X-AccessKey-Secret: secret-xxx"
+
+# 查询配额
+curl http://localhost:5048/api/cn-east-1/quota \
+  -H "X-AccessKey-Id: oss-key-001" \
+  -H "X-AccessKey-Secret: secret-xxx"
+```
+
 ## API 文档
 
 所有 API 需通过请求头携带认证信息：
