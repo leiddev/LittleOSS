@@ -21,6 +21,7 @@ namespace LittleOSS
             builder.Services.Configure<OssOptions>(
                 builder.Configuration.GetSection(OssOptions.Position));
 
+            // Load access keys from config into singleton options
             builder.Services.AddSingleton<AccessKeyOptions>(_ =>
             {
                 var accessKeys = builder.Configuration
