@@ -4,17 +4,24 @@ using LittleOSS.Models;
 
 namespace LittleOSS.Services;
 
+/// <summary>
+/// 文件元数据服务实现，使用 EF Core 操作数据库元数据记录
+/// </summary>
 public class MetadataService : IMetadataService
 {
     private readonly IDbContextFactory<OssDbContext> _contextFactory;
     private readonly ILogger<MetadataService> _logger;
 
+    /// <summary>构造函数</summary>
+    /// <param name="contextFactory">数据库上下文工厂</param>
+    /// <param name="logger">日志记录器</param>
     public MetadataService(IDbContextFactory<OssDbContext> contextFactory, ILogger<MetadataService> logger)
     {
         _contextFactory = contextFactory;
         _logger = logger;
     }
 
+    /// <inheritdoc />
     public async Task<FileMetadata?> GetByFileIdAsync(string fileId, CancellationToken ct = default)
     {
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
@@ -25,6 +32,7 @@ public class MetadataService : IMetadataService
             .FirstOrDefaultAsync(ct);
     }
 
+    /// <inheritdoc />
     public async Task<IReadOnlyList<FileMetadata>> GetRegionFilesAsync(
         string region,
         int skip = 0,
@@ -44,6 +52,7 @@ public class MetadataService : IMetadataService
         return files.AsReadOnly();
     }
 
+    /// <inheritdoc />
     public async Task<int> GetRegionFileCountAsync(string region, CancellationToken ct = default)
     {
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
@@ -52,6 +61,7 @@ public class MetadataService : IMetadataService
             .CountAsync(f => f.Region == region && !f.IsDeleted, ct);
     }
 
+    /// <inheritdoc />
     public async Task CreateRecordAsync(FileMetadata metadata, CancellationToken ct = default)
     {
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
@@ -64,6 +74,7 @@ public class MetadataService : IMetadataService
             metadata.FileId, metadata.Region, metadata.FileSizeBytes);
     }
 
+    /// <inheritdoc />
     public async Task SoftDeleteAsync(string fileId, CancellationToken ct = default)
     {
         await using var context = await _contextFactory.CreateDbContextAsync(ct);

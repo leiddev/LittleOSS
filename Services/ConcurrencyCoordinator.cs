@@ -4,6 +4,9 @@ using LittleOSS.Models;
 
 namespace LittleOSS.Services;
 
+/// <summary>
+/// 并发协调器，负责协调文件上传和删除操作中的配额检查、区域锁定和事务处理
+/// </summary>
 public class ConcurrencyCoordinator : IConcurrencyCoordinator
 {
     private readonly IOssConfigService _configService;
@@ -14,6 +17,7 @@ public class ConcurrencyCoordinator : IConcurrencyCoordinator
     private readonly IDbContextFactory<OssDbContext> _contextFactory;
     private readonly ILogger<ConcurrencyCoordinator> _logger;
 
+    /// <inheritdoc />
     public ConcurrencyCoordinator(
         IOssConfigService configService,
         IFileStorageService fileStorage,
@@ -32,6 +36,7 @@ public class ConcurrencyCoordinator : IConcurrencyCoordinator
         _logger = logger;
     }
 
+    /// <inheritdoc />
     public async Task<UploadResult> UploadAsync(
         string region,
         Stream stream,
@@ -40,6 +45,7 @@ public class ConcurrencyCoordinator : IConcurrencyCoordinator
         string accessKeyId,
         CancellationToken ct = default)
     {
+        // 检查文件大小是否超过配置的最大限制
         if (stream.Length > _configService.MaxFileSizeBytes)
         {
             return new UploadResult(
@@ -48,10 +54,12 @@ public class ConcurrencyCoordinator : IConcurrencyCoordinator
                 ErrorMessage: $"File size exceeds maximum allowed size of {_configService.MaxFileSizeBytes} bytes");
         }
 
+        // 获取区域锁，防止同一区域的并发上传冲突
         await using var regionLock = await _lockService.AcquireRegionLockAsync(region, ct);
 
         try
         {
+            // 检查区域配额是否足够
             if (!await _quota.CanUploadAsync(region, stream.Length, ct))
             {
                 var quotaInfo = await _quota.GetQuotaInfoAsync(region, ct);
@@ -61,9 +69,11 @@ public class ConcurrencyCoordinator : IConcurrencyCoordinator
                     ErrorMessage: $"Region '{region}' quota exceeded. Used: {quotaInfo.UsedBytes}, Quota: {quotaInfo.QuotaBytes}");
             }
 
+            // 生成文件唯一标识
             var fileId = Guid.NewGuid().ToString("N");
             var filePath = $"{region}/{fileId}";
 
+            // 构建文件元数据对象
             var metadata = new FileMetadata
             {
                 Id = Guid.NewGuid(),
@@ -80,9 +90,11 @@ public class ConcurrencyCoordinator : IConcurrencyCoordinator
 
             try
             {
+                // 将文件流重置到开头并保存到存储服务
                 stream.Position = 0;
                 await _fileStorage.SaveFileAsync(region, fileId, stream, ct);
 
+                // 保存元数据到数据库
                 await _metadata.CreateRecordAsync(metadata, ct);
 
                 _logger.LogInformation(
@@ -93,6 +105,7 @@ public class ConcurrencyCoordinator : IConcurrencyCoordinator
             }
             catch (Exception ex)
             {
+                // 上传失败时清理已保存的物理文件
                 _logger.LogError(ex, "Failed to upload file: {FileId}", fileId);
                 await _fileStorage.DeleteFileAsync(region, fileId, ct);
                 throw;
@@ -108,12 +121,15 @@ public class ConcurrencyCoordinator : IConcurrencyCoordinator
         }
     }
 
+    /// <inheritdoc />
     public async Task DeleteAsync(string region, string fileId, CancellationToken ct = default)
     {
+        // 获取区域锁，确保删除操作的原子性
         await using var regionLock = await _lockService.AcquireRegionLockAsync(region, ct);
 
         try
         {
+            // 验证文件是否存在
             var metadata = await _metadata.GetByFileIdAsync(fileId, ct);
             if (metadata == null)
             {
@@ -121,7 +137,10 @@ public class ConcurrencyCoordinator : IConcurrencyCoordinator
                 return;
             }
 
+            // 删除物理文件
             await _fileStorage.DeleteFileAsync(region, fileId, ct);
+
+            // 软删除元数据记录
             await _metadata.SoftDeleteAsync(fileId, ct);
 
             _logger.LogInformation("File deleted: FileId={FileId}, Region={Region}", fileId, region);
