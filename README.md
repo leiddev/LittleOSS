@@ -233,5 +233,6 @@ LittleOSS/
 │   └── RegionLockService.cs          # 区域锁服务
 ├── Program.cs                        # 程序入口
 ├── appsettings.json                  # 配置文件
-└── LittleOSS.csproj
+├── LittleOSS.csproj
+└── tests                             # Python 测试脚本
 ```
