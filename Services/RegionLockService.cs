@@ -19,6 +19,19 @@ public class RegionLockService : IRegionLockService
         return new RegionLockReleaser(semaphore);
     }
 
+    /// <inheritdoc />
+    public async Task<IAsyncDisposable> AcquireRegionLockAsync(string region, TimeSpan timeout, CancellationToken ct = default)
+    {
+        var semaphore = _regionLocks.GetOrAdd(region, _ => new SemaphoreSlim(1, 1));
+
+        if (!await semaphore.WaitAsync(timeout, ct))
+        {
+            throw new TimeoutException($"Failed to acquire region lock for '{region}' within {timeout.TotalMilliseconds:F0}ms");
+        }
+
+        return new RegionLockReleaser(semaphore);
+    }
+
     /// <summary>
     /// 区域锁释放器，用于 <see cref="IRegionLockService.AcquireRegionLockAsync"/> 返回值的 Dispose 逻辑
     /// </summary>

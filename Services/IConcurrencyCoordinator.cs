@@ -31,7 +31,8 @@ public interface IConcurrencyCoordinator
     /// <param name="region">文件所属区域</param>
     /// <param name="fileId">文件唯一标识</param>
     /// <param name="ct">取消令牌</param>
-    Task DeleteAsync(string region, string fileId, CancellationToken ct = default);
+    /// <returns>删除操作的结果</returns>
+    Task<DeleteResult> DeleteAsync(string region, string fileId, CancellationToken ct = default);
 }
 
 /// <summary>
@@ -46,5 +47,13 @@ public record UploadResult(
     bool Success,
     string? FileId = null,
     FileMetadata? Metadata = null,
+    string? ErrorCode = null,
+    string? ErrorMessage = null);
+
+/// <summary>
+/// 删除操作的结果记录
+/// </summary>
+public record DeleteResult(
+    bool Success,
     string? ErrorCode = null,
     string? ErrorMessage = null);

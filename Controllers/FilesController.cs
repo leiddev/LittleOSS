@@ -108,6 +108,7 @@ public class FilesController : ControllerBase
             {
                 "QUOTA_EXCEEDED" => 413,
                 "FILE_TOO_LARGE" => 413,
+                "LOCK_TIMEOUT" => 503,
                 _ => 500
             };
 
@@ -270,7 +271,11 @@ public class FilesController : ControllerBase
         try
         {
             // 通过协调器执行删除
-            await _coordinator.DeleteAsync(region, fileId, ct);
+            var result = await _coordinator.DeleteAsync(region, fileId, ct);
+            if (!result.Success)
+            {
+                return StatusCode(500, new ErrorResponse { Error = result.ErrorCode ?? "DELETE_FAILED", Message = result.ErrorMessage ?? "Delete operation failed" });
+            }
             return NoContent();
         }
         catch (Exception ex)
