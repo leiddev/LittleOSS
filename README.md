@@ -168,15 +168,70 @@ DELETE /api/{region}/files/{fileId}
 | 413 | `QUOTA_EXCEEDED` | 存储配额不足 |
 | 500 | `UPLOAD_FAILED` / `DELETE_FAILED` | 服务器内部错误 |
 
+## 架构图
+
+```mermaid
+flowchart TB
+    subgraph Client["客户端"]
+        HTTP[HTTP Request<br/>X-AccessKey-Id<br/>X-AccessKey-Secret<br/>X-Region]
+    end
+
+    subgraph Api["OSS API Layer"]
+        Auth[Authentication<br/>Middleware]
+        Ctrl[FilesController]
+    end
+
+    subgraph Services["Service Layer"]
+        Storage[FileStorageService]
+        Meta[MetadataService]
+        Quota[QuotaService]
+        Config[ConfigService]
+        Concurrency[ConcurrencyCoordinator]
+        RegionLock[RegionLockService]
+    end
+
+    subgraph Data["Data Layer"]
+        SQLite[(SQLite<br/>FileMetadata)]
+        FileSystem[File System<br/>storage_root/]
+    end
+
+    HTTP --> Auth
+    Auth --> Ctrl
+    Ctrl --> Storage
+    Ctrl --> Meta
+    Ctrl --> Quota
+    Ctrl --> Concurrency
+    Ctrl --> RegionLock
+    Storage --> FileSystem
+    Meta --> SQLite
+    Quota --> SQLite
+```
+
 ## 项目结构
 
 ```
 LittleOSS/
-├── Authentication/          # 认证处理
-├── Controllers/            # API 控制器
-├── Services/               # 业务服务层
-├── Models/                 # 数据模型
-├── Data/                   # 数据库上下文
-├── Options/                # 配置选项
-└── Program.cs              # 程序入口
+├── Authentication/
+│   └── OssAuthenticationHandler.cs   # AccessKey 认证处理
+├── Controllers/
+│   └── FilesController.cs            # RESTful API 控制器
+├── Data/
+│   └── OssDbContext.cs               # EF Core SQLite 上下文
+├── Models/
+│   ├── AccessKey.cs                  # AccessKey 实体
+│   ├── FileMetadata.cs               # 文件元数据实体
+│   ├── Requests/                    # 请求模型
+│   └── Responses/                   # 响应模型
+├── Options/
+│   └── OssOptions.cs                 # 配置选项绑定
+├── Services/
+│   ├── FileStorageService.cs         # 文件物理存储
+│   ├── MetadataService.cs           # 元数据 CRUD
+│   ├── QuotaService.cs               # 配额管理
+│   ├── OssConfigService.cs           # 配置读取
+│   ├── ConcurrencyCoordinator.cs    # 并发协调器
+│   └── RegionLockService.cs          # 区域锁服务
+├── Program.cs                        # 程序入口
+├── appsettings.json                  # 配置文件
+└── LittleOSS.csproj
 ```
