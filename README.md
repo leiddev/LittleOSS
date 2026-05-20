@@ -21,19 +21,42 @@
 
 在 `appsettings.json` 中配置 AccessKey 和区域：
 
+### Oss 配置
+
+| 配置项 | 类型 | 说明 |
+|--------|------|------|
+| `StorageRoot` | string | 文件存储根目录，默认为 `./oss-storage` |
+| `Regions` | string[] | 可用的区域列表，如 `cn-east-1`、`us-west-1` |
+| `MaxQuotaPerRegion` | object | 各区域的最大存储配额，支持 `KB`、`MB`、`GB` 单位 |
+| `MaxFileSizeBytes` | number | 单个文件的最大大小限制，单位为字节 |
+
+### AccessKeys 配置
+
+| 配置项 | 类型 | 说明 |
+|--------|------|------|
+| `KeyId` | string | AccessKey 唯一标识，用于客户端认证 |
+| `SecretKey` | string | AccessKey 密钥，需妥善保管 |
+| `EnabledRegions` | string[] | 该 Key 允许访问的区域，`"*"` 表示全部区域 |
+
 ```json
 {
   "Oss": {
-    "Regions": [ "cn-east-1" ],
-    "MaxFileSizeBytes": 104857600,
-    "DefaultQuotaBytes": 10737418240,
-    "StorageRoot": "./storage"
+    "StorageRoot": "./oss-storage",
+    "Regions": [
+      "cn-east-1",
+      "us-west-1"
+    ],
+    "MaxQuotaPerRegion": {
+      "cn-east-1": "10GB",
+      "us-west-1": "5GB"
+    },
+    "MaxFileSizeBytes": 10485760
   },
   "AccessKeys": [
     {
       "KeyId": "oss-key-001",
       "SecretKey": "secret-xxx",
-      "AllowedRegions": [ "cn-east-1" ]
+      "EnabledRegions": [ "*" ]
     }
   ]
 }
