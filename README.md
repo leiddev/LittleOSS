@@ -15,7 +15,7 @@
 ### 环境要求
 
 - .NET 9.0 SDK
-- SQLite
+- SQLite 或 MySQL 8.0+
 
 ### 配置
 
@@ -38,6 +38,14 @@
 | `SecretKey` | string | AccessKey 密钥，需妥善保管 |
 | `EnabledRegions` | string[] | 该 Key 允许访问的区域，`"*"` 表示全部区域 |
 
+### Database 配置
+
+| 配置项 | 类型 | 说明 |
+|--------|------|------|
+| `Provider` | string | 数据库类型，支持 `Sqlite`（默认）和 `MySql` |
+| `ConnectionString` | string | MySQL 连接字符串（当 Provider=MySql 时使用） |
+| `SqlitePath` | string | SQLite 数据库文件路径，默认为 `oss.db` |
+
 ```json
 {
   "Oss": {
@@ -50,7 +58,12 @@
       "cn-east-1": "10GB",
       "us-west-1": "5GB"
     },
-    "MaxFileSizeBytes": 10485760
+    "MaxFileSizeBytes": 10485760,
+    "Database": {
+      "Provider": "Sqlite",
+      "ConnectionString": "Server=localhost;Port=3306;Database=littleoss;User=root;Password=;",
+      "SqlitePath": "oss.db"
+    }
   },
   "AccessKeys": [
     {
@@ -224,7 +237,7 @@ flowchart TB
     end
 
     subgraph Data["Data Layer"]
-        SQLite[(SQLite<br/>FileMetadata)]
+        Database[(MySQL / SQLite<br/>FileMetadata)]
         FileSystem[File System<br/>storage_root/]
     end
 
@@ -249,7 +262,7 @@ LittleOSS/
 ├── Controllers/
 │   └── FilesController.cs            # RESTful API 控制器
 ├── Data/
-│   └── OssDbContext.cs               # EF Core SQLite 上下文
+│   └── OssDbContext.cs               # EF Core 数据库上下文（支持 MySQL/SQLite）
 ├── Models/
 │   ├── AccessKey.cs                  # AccessKey 实体
 │   ├── FileMetadata.cs               # 文件元数据实体
