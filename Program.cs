@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 using LittleOSS.Options;
+using LittleOSS.Data;
 
 namespace LittleOSS
 {
@@ -50,10 +51,28 @@ namespace LittleOSS
             Console.WriteLine($"[Config] Oss section exists: {ossSection.Exists()}");
             Console.WriteLine($"[Config] Oss Regions: {string.Join(", ", ossSection.Get<OssOptions>()?.Regions ?? [])}");
 
-            // Register DbContext with SQLite
-            var dbPath = Path.Combine(builder.Environment.ContentRootPath, "oss.db");
+            // Register DbContext with dynamic database selection
+            var dbConfig = builder.Configuration.GetSection("Oss:Database").Get<DatabaseOptions>()
+                ?? new DatabaseOptions();
+
             builder.Services.AddDbContextFactory<Data.OssDbContext>(options =>
-                options.UseSqlite($"Data Source={dbPath}"));
+            {
+                if (dbConfig.Provider.Equals("MySql", StringComparison.OrdinalIgnoreCase))
+                {
+                    var connectionString = dbConfig.ConnectionString
+                        ?? "Server=localhost;Port=3306;Database=littleoss;User=root;Password=;";
+                    var serverVersion = new MySqlServerVersion(new Version(8, 0, 0));
+                    options.UseMySql(connectionString, serverVersion);
+                }
+                else
+                {
+                    var sqliteFileName = string.IsNullOrEmpty(dbConfig.SqlitePath)
+                        ? "oss.db"
+                        : dbConfig.SqlitePath;
+                    var dbPath = Path.Combine(builder.Environment.ContentRootPath, sqliteFileName);
+                    options.UseSqlite($"Data Source={dbPath}");
+                }
+            });
 
             // Register OSS services
             builder.Services.AddSingleton<Services.IOssConfigService, Services.OssConfigService>();

@@ -11,6 +11,20 @@ public class OssOptions
     public Dictionary<string, string> MaxQuotaPerRegion { get; set; } = new();
 
     public long MaxFileSizeBytes { get; set; } = 10485760; // 10MB default
+
+    public DatabaseOptions Database { get; set; } = new();
+}
+
+public class DatabaseOptions
+{
+    /// 数据库类型：Sqlite / MySql
+    public string Provider { get; set; } = "Sqlite";
+
+    /// MySQL 连接字符串（当 Provider=MySql 时使用）
+    public string? ConnectionString { get; set; }
+
+    /// SQLite 数据库文件路径（当 Provider=Sqlite 时使用）
+    public string? SqlitePath { get; set; }
 }
 
 public class AccessKeyOptions
