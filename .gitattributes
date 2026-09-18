@@ -4,6 +4,13 @@
 * text=auto
 
 ###############################################################################
+# Keep SQL scripts as LF regardless of platform. They are also consumed
+# directly by sqlite3 / mysql / mysqlsh, and Git's CRLF conversion would
+# otherwise rewrite them on every checkout.
+###############################################################################
+*.sql text eol=lf
+
+###############################################################################
 # Set default behavior for command prompt diff.
 #
 # This is need for earlier builds of msysgit that does not have it on by
