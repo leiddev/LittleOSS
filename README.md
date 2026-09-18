@@ -75,6 +75,38 @@
 }
 ```
 
+### 数据库初始化
+
+应用启动时会调用 `Database.EnsureCreatedAsync()` 自动建库建表（SQLite 和 MySQL 均是），一般情况下无需手工初始化数据库。
+
+如需手工初始化（DBA 审批、CI/CD、容器化部署、单独审阅 DDL 等场景），可直接执行 `sql/` 下对应的脚本：
+
+**MySQL** —— [`sql/init.sql`](sql/init.sql)
+
+```bash
+# MySQL Shell（推荐，PowerShell / cmd / bash 通用）
+mysqlsh --sql --uri "mysql://root:密码@127.0.0.1:3306" -f sql/init.sql
+
+# 或 mysql 客户端（用 source 命令，等价于 `.read`）
+mysql -h 127.0.0.1 -P 3306 -u root -p -e "source sql/init.sql"
+```
+
+会创建数据库 `littleoss`（库名需与 `Oss.Database.ConnectionString` 中的 `Database` 一致）以及 `FileMetadatas` 表和相关索引。
+
+**SQLite** —— [`sql/init.sqlite.sql`](sql/init.sqlite.sql)
+
+```bash
+sqlite3 oss.db ".read sql/init.sqlite.sql"
+```
+
+SQLite 没有独立的建库语句，目标文件不存在时会被自动创建；文件路径需与 `Oss.Database.SqlitePath` 一致（默认 `oss.db`，相对内容根目录解析）。
+
+> 上面的 `.read` / `source` 写法在 PowerShell 和 cmd 下都可用。等价的输入重定向写法 `sqlite3 oss.db < sql/init.sqlite.sql`、`mysql ... < sql/init.sql` 只在 cmd / bash 下有效——**PowerShell 不支持 `<` 输入重定向**。
+
+两个脚本都是幂等的，可重复执行；表名、列类型、NULL 约束、主键与索引均与 EF 实际生成的结构一致（已逐项比对验证）。
+
+> ⚠️ `EnsureCreatedAsync()` 只在库中**一张表都没有**时建表，不会比对或补齐已有表结构。因此用脚本预建表是安全的（EF 会自动跳过），但也意味着 `sql/init.sql` 与 `sql/init.sqlite.sql` 必须与 EF 模型（`Data/OssDbContext.cs`、`Models/FileMetadata.cs`）保持一致；模型变更后需同步修改这两个文件，表结构会持续演进时建议改用 EF Migrations。
+
 ### 运行
 
 ```bash
